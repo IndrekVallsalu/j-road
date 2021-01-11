@@ -32,6 +32,7 @@ import org.w3c.dom.Element;
 
 import com.nortal.jroad.mapping.XTeeEndpointMapping;
 import com.nortal.jroad.model.XRoadHeader;
+import org.w3c.dom.NodeList;
 
 /**
  * Generates WSDL for X-Road services from a schema, much like Spring's WSDL generator it delegates to
@@ -189,14 +190,26 @@ public class XTeeWsdlDefinition implements Wsdl11Definition, InitializingBean {
     for (Object ex : definition.getTypes().getExtensibilityElements()) {
       if (ex instanceof Schema) {
         Schema schema = (Schema) ex;
-        Element xRoadImport =
-            schema.getElement().getOwnerDocument().createElement(schema.getElement().getPrefix() == null
-                                                                                                         ? "import"
-                                                                                                         : schema.getElement().getPrefix()
-                                                                                                             + ":import");
-        xRoadImport.setAttribute("namespace", XROAD_NAMESPACE);
-        xRoadImport.setAttribute("schemaLocation", XROAD_NAMESPACE);
-        schema.getElement().insertBefore(xRoadImport, schema.getElement().getFirstChild());
+
+        boolean addXroadImportToSchema = true;
+        NodeList importList = schema.getElement().getElementsByTagName("import");
+        for (int i = 0; i < importList.getLength(); i++) {
+          if (((Element)importList.item(i)).getAttribute("namespace").equalsIgnoreCase(XROAD_NAMESPACE)) {
+            addXroadImportToSchema = false;
+            break;
+          }
+        }
+
+        if (addXroadImportToSchema) {
+          Element xRoadImport =
+              schema.getElement().getOwnerDocument().createElement(schema.getElement().getPrefix() == null
+                  ? "import"
+                  : schema.getElement().getPrefix()
+                      + ":import");
+          xRoadImport.setAttribute("namespace", XROAD_NAMESPACE);
+          xRoadImport.setAttribute("schemaLocation", XROAD_NAMESPACE);
+          schema.getElement().insertBefore(xRoadImport, schema.getElement().getFirstChild());
+        }
         break;
       }
     }
