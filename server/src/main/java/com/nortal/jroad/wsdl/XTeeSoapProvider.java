@@ -9,11 +9,12 @@
 
 package com.nortal.jroad.wsdl;
 
+import com.nortal.jroad.annotation.XTeeService;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 
+import javax.naming.NameNotFoundException;
 import javax.wsdl.Binding;
 import javax.wsdl.BindingInput;
 import javax.wsdl.BindingOperation;
@@ -23,7 +24,6 @@ import javax.wsdl.Input;
 import javax.wsdl.Output;
 import javax.wsdl.Port;
 import javax.wsdl.WSDLException;
-import javax.wsdl.extensions.ExtensibilityElement;
 import javax.wsdl.extensions.ExtensionRegistry;
 import javax.wsdl.extensions.UnknownExtensibilityElement;
 import javax.wsdl.extensions.soap.SOAPBinding;
@@ -33,17 +33,19 @@ import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.springframework.util.StringUtils;
+import org.springframework.ws.server.endpoint.MessageEndpoint;
 import org.springframework.ws.wsdl.wsdl11.provider.Soap11Provider;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 import com.nortal.jroad.mapping.XTeeEndpointMapping;
-import com.nortal.jroad.model.XTeeHeader;
+import com.nortal.jroad.model.XRoadHeader;
 
 /**
  * Creates X-Road specific SOAP headers and bindings (<code>Document/Literal</code> is used). Used by
  * {@link XTeeWsdlDefinition}.
- * 
+ *
  * @author Lauri Lättemäe (lauri.lattemae@nortal.com) - protocol 4.0
  */
 public class XTeeSoapProvider extends Soap11Provider {
@@ -56,17 +58,46 @@ public class XTeeSoapProvider extends Soap11Provider {
 
   private XTeeEndpointMapping xRoadEndpointMapping;
 
-  private List<SOAPHeader> makeHeaders(Definition definition) throws WSDLException {
+  private List<SOAPHeader> makeHeaders(Definition definition, String bindingMethod) throws WSDLException {
     List<SOAPHeader> list = new ArrayList<SOAPHeader>();
-    String[] parts = new String[] { XTeeHeader.CLIENT.getLocalPart(), XTeeHeader.SERVICE.getLocalPart(),
-                                    XTeeHeader.USER_ID.getLocalPart(), XTeeHeader.ID.getLocalPart(),
-                                    XTeeHeader.PROTOCOL_VERSION.getLocalPart() };
+    List<String> parts = new ArrayList<String>(Arrays.asList(XRoadHeader.CLIENT.getLocalPart(),
+        XRoadHeader.SERVICE.getLocalPart(), XRoadHeader.USER_ID.getLocalPart(), XRoadHeader.ID.getLocalPart(),
+        XRoadHeader.PROTOCOL_VERSION.getLocalPart()));
+
+    try {
+      if (!StringUtils.isEmpty(bindingMethod)) {
+        // Get endpoint
+        MessageEndpoint endpoint = null;
+        for (String method : xRoadEndpointMapping.getMethods()) {
+          String methodTail = method.substring(method.indexOf('.') + 1).toLowerCase();
+          if (methodTail.startsWith(bindingMethod.toLowerCase() + ".")) {
+            endpoint = xRoadEndpointMapping.getMethodMap().get(method);
+            break;
+          }
+        }
+
+        if (endpoint == null)
+          throw new NameNotFoundException();
+
+        // Get annotation from endpoint and check that it contains a name.
+        XTeeService xRoadServiceAnnotation = endpoint.getClass().getAnnotation(XTeeService.class);
+        if (xRoadServiceAnnotation == null)
+          throw new NameNotFoundException();
+
+        if (xRoadServiceAnnotation.representedParty()) {
+          parts.add(XRoadHeader.REPRESENTED_PARTY.getLocalPart());
+        }
+      }
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+
     ExtensionRegistry extReg = definition.getExtensionRegistry();
-    for (int i = 0; i < parts.length; i++) {
+    for (String part: parts) {
       SOAPHeader header =
           (SOAPHeader) extReg.createExtension(BindingInput.class, new QName(SOAP_11_NAMESPACE_URI, "header"));
       header.setMessage(new QName(definition.getTargetNamespace(), XTeeWsdlDefinition.XROAD_HEADER));
-      header.setPart(parts[i]);
+      header.setPart(part);
       if (use.equalsIgnoreCase(LITERAL)) {
         header.setUse(LITERAL);
       } else {
@@ -82,7 +113,7 @@ public class XTeeSoapProvider extends Soap11Provider {
   @Override
   protected void populateBindingInput(Definition definition, BindingInput bindingInput, Input input)
       throws WSDLException {
-    for (SOAPHeader header : makeHeaders(definition)) {
+    for (SOAPHeader header : makeHeaders(definition, input.getName().replace("Request", ""))) {
       bindingInput.addExtensibilityElement(header);
     }
     super.populateBindingInput(definition, bindingInput, input);
@@ -91,7 +122,7 @@ public class XTeeSoapProvider extends Soap11Provider {
   @Override
   protected void populateBindingOutput(Definition definition, BindingOutput bindingOutput, Output output)
       throws WSDLException {
-    for (SOAPHeader header : makeHeaders(definition)) {
+    for (SOAPHeader header : makeHeaders(definition, null)) {
       bindingOutput.addExtensibilityElement(header);
     }
     super.populateBindingOutput(definition, bindingOutput, output);

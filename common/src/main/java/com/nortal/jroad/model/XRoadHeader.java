@@ -17,7 +17,7 @@ import javax.xml.namespace.QName;
 
 /**
  * Encapsulates X-Tee query header object.
- * 
+ *
  * @author Roman Tekhov
  * @author Aleksei Bogdanov (aleksei.bogdanov@nortal.com)
  * @author Lauri Lättemäe (lauri.lattemae@nortal.com) - protocol 4.0
@@ -29,9 +29,11 @@ public class XRoadHeader implements Serializable {
   private static final long serialVersionUID = 1L;
 
   public static final String XROAD_NS_URI = "http://x-road.eu/xsd/xroad.xsd";
+  public static final String XROAD_REPR_NS_URI = "http://x-road.eu/xsd/representation.xsd";
 
   public static final QName CLIENT = new QName(XROAD_NS_URI, "client");
   public static final QName SERVICE = new QName(XROAD_NS_URI, "service");
+  public static final QName REPRESENTED_PARTY = new QName(XROAD_REPR_NS_URI, "representedParty");
   public static final QName USER_ID = new QName(XROAD_NS_URI, "userId");
   public static final QName ID = new QName(XROAD_NS_URI, "id");
   public static final QName PROTOCOL_VERSION = new QName(XROAD_NS_URI, "protocolVersion");

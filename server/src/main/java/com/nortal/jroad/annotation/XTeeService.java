@@ -17,7 +17,8 @@ import java.lang.annotation.RetentionPolicy;
  * arbitrary, <code>version</code> number must be given in the form <code>vN</code> where
  * <code>N</code> is the version number.
  * <code>value</code> is provided for convenience and is equal to setting <code>name</code>.
- * 
+ * <code>representedParty</code> is boolean form creating  represented party header elements in wsdl bindings
+ *
  * @author Dmitri Danilkin
  * @author Taimo Peelo
  */
@@ -30,4 +31,6 @@ public @interface XTeeService {
   String title() default "";
 
   String version() default "v1";
+
+  boolean representedParty() default false;
 }

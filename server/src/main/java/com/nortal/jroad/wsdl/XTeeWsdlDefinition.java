@@ -31,14 +31,14 @@ import org.springframework.xml.xsd.XsdSchemaCollection;
 import org.w3c.dom.Element;
 
 import com.nortal.jroad.mapping.XTeeEndpointMapping;
-import com.nortal.jroad.model.XTeeHeader;
+import com.nortal.jroad.model.XRoadHeader;
 
 /**
  * Generates WSDL for X-Road services from a schema, much like Spring's WSDL generator it delegates to
  * <code>InliningXsdSchemaTypesProvider</code>, <code>DefaultMessagesProvider</code>,
  * <code>SuffixBasedPortTypesProvider</code>, <code>ProviderBasedWsdl4jDefinition</code> and {@link XTeeSoapProvider}
  * underneath.
- * 
+ *
  * @author Dmitri Danilkin
  * @author Lauri Lättemäe (lauri.lattemae@nortal.com) - protocol 4.0
  */
@@ -64,6 +64,8 @@ public class XTeeWsdlDefinition implements Wsdl11Definition, InitializingBean {
   public static final String XROAD_NAMESPACE = "http://x-road.eu/xsd/xroad.xsd";
   public static final String XROAD_PREFIX = "xrd";
   public static final String XROAD_IDEN_NAMESPACE = "http://x-road.eu/xsd/identifiers";
+  public static final String XROAD_REPR_PREFIX = "repr";
+  public static final String XROAD_REPR_NS_URI = "http://x-road.eu/xsd/representation.xsd";
 
   public XTeeWsdlDefinition() {
     delegate.setTypesProvider(typesProvider);
@@ -119,7 +121,7 @@ public class XTeeWsdlDefinition implements Wsdl11Definition, InitializingBean {
   /**
    * Sets the SOAP Actions for this binding. Keys are {@link javax.wsdl.BindingOperation#getName() binding operation
    * names}; values are {@link javax.wsdl.extensions.soap.SOAPOperation#getSoapActionURI() SOAP Action URIs}.
-   * 
+   *
    * @param soapActions the soap
    */
   public void setSoapActions(Properties soapActions) {
@@ -168,15 +170,17 @@ public class XTeeWsdlDefinition implements Wsdl11Definition, InitializingBean {
 
   private void addXRoadExtensions(Definition definition) throws WSDLException {
     definition.addNamespace(XROAD_PREFIX, XROAD_NAMESPACE);
+    definition.addNamespace(XROAD_REPR_PREFIX, XROAD_REPR_NS_URI);
 
     Message message = definition.createMessage();
     message.setQName(new QName(definition.getTargetNamespace(), XROAD_HEADER));
 
-    addXroadHeaderPart(definition, message, XTeeHeader.CLIENT);
-    addXroadHeaderPart(definition, message, XTeeHeader.SERVICE);
-    addXroadHeaderPart(definition, message, XTeeHeader.ID);
-    addXroadHeaderPart(definition, message, XTeeHeader.USER_ID);
-    addXroadHeaderPart(definition, message, XTeeHeader.PROTOCOL_VERSION);
+    addXroadHeaderPart(definition, message, XRoadHeader.CLIENT);
+    addXroadHeaderPart(definition, message, XRoadHeader.SERVICE);
+    addXroadHeaderPart(definition, message, XRoadHeader.REPRESENTED_PARTY);
+    addXroadHeaderPart(definition, message, XRoadHeader.ID);
+    addXroadHeaderPart(definition, message, XRoadHeader.USER_ID);
+    addXroadHeaderPart(definition, message, XRoadHeader.PROTOCOL_VERSION);
 
     message.setUndefined(false);
     definition.addMessage(message);
