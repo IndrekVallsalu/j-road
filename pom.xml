@@ -110,14 +110,25 @@
         </repository>
       </distributionManagement>
     </profile>
+
+    <profile>
+      <id>ehis2</id>
+      <distributionManagement>
+        <repository>
+          <id>maven-releases</id>
+          <name>Ehis2 maven repo</name>
+          <url>https://nexus.ehis2.dev.tes.ee/repository/maven-releases/</url>
+        </repository>
+      </distributionManagement>
+    </profile>
   </profiles>
   <modules>
     <module>common</module>
-    <module>client-transport</module>
+<!--    <module>client-transport</module>-->
     <module>server</module>
-    <module>typegen</module>
-    <module>example</module>
-    <module>client-service</module>
+<!--    <module>typegen</module>-->
+<!--    <module>example</module>-->
+<!--    <module>client-service</module>-->
   </modules>
   <build>
     <plugins>
