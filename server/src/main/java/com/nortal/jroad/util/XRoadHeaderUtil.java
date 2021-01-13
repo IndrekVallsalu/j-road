@@ -1,5 +1,7 @@
-package com.nortal.jroad.util.header;
+package com.nortal.jroad.util;
 
+import com.nortal.jroad.model.XRoadHeader;
+import com.nortal.jroad.model.XRoadHeaderElement;
 import com.nortal.jroad.util.SOAPUtil;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;

@@ -10,22 +10,21 @@
 package com.nortal.jroad.endpoint;
 
 import com.nortal.jroad.enums.XRoadProtocolVersion;
-import com.nortal.jroad.model.BeanXTeeMessage;
-import com.nortal.jroad.model.XTeeAttachment;
-import com.nortal.jroad.model.XTeeHeader;
-import com.nortal.jroad.model.XTeeMessage;
+import com.nortal.jroad.model.BeanXRoadMessage;
+import com.nortal.jroad.model.XRoadAttachment;
+import com.nortal.jroad.model.XRoadHeader;
+import com.nortal.jroad.model.XRoadMessage;
 import com.nortal.jroad.util.SOAPUtil;
+import com.nortal.jroad.util.XRoadHeaderUtil;
 import com.nortal.jroad.wsdl.XTeeWsdlDefinition;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.soap.AttachmentPart;
 import javax.xml.soap.SOAPElement;
 import javax.xml.soap.SOAPEnvelope;
 import javax.xml.soap.SOAPException;
-import javax.xml.soap.SOAPHeader;
 import javax.xml.soap.SOAPMessage;
 import org.springframework.ws.context.MessageContext;
 import org.springframework.ws.server.endpoint.MessageEndpoint;
@@ -38,8 +37,8 @@ import org.w3c.dom.NodeList;
 
 /**
  * Base class for X-Tee Spring web-service endpoints, extension classes must implement
- * {@link AbstractXTeeBaseEndpoint#invokeInternal(XTeeMessage request, XTeeMessage response)}.
- * 
+ * {@link AbstractXTeeBaseEndpoint#invokeInternal(XRoadMessage request, XRoadMessage response)}.
+ *
  * @author Roman Tekhov
  * @author Dmitri Danilkin
  * @author Lauri Lättemäe (lauri.lattemae@nortal.com) - protocol 4.0
@@ -72,7 +71,7 @@ public abstract class AbstractXTeeBaseEndpoint implements MessageEndpoint {
       for (int i = 0; i < reqHeaders.getLength(); i++) {
         Node reqHeader = reqHeaders.item(i);
         if (reqHeader.getNodeType() != Node.ELEMENT_NODE
-            || !reqHeader.getLocalName().equals(XTeeHeader.PROTOCOL_VERSION.getLocalPart())) {
+            || !reqHeader.getLocalName().equals(XRoadHeader.PROTOCOL_VERSION.getLocalPart())) {
           continue;
         }
 
@@ -97,15 +96,15 @@ public abstract class AbstractXTeeBaseEndpoint implements MessageEndpoint {
 
   @SuppressWarnings("unchecked")
   protected void getResponse(Document query, SOAPMessage responseMessage, SOAPMessage requestMessage) throws Exception {
-    XTeeHeader header = metaService ? null : parseXteeHeader(requestMessage);
+    XRoadHeader header = metaService ? null : XRoadHeaderUtil.parseXRoadHeader(requestMessage);
 
     // Build request message
-    List<XTeeAttachment> attachments = new ArrayList<XTeeAttachment>();
+    List<XRoadAttachment> attachments = new ArrayList<XRoadAttachment>();
     for (Iterator<AttachmentPart> i = requestMessage.getAttachments(); i.hasNext();) {
       AttachmentPart a = i.next();
-      attachments.add(new XTeeAttachment(a.getContentId(), a.getContentType(), a.getRawContentBytes()));
+      attachments.add(new XRoadAttachment(a.getContentId(), a.getContentType(), a.getRawContentBytes()));
     }
-    XTeeMessage<Document> request = new BeanXTeeMessage<Document>(header, query, attachments);
+    XRoadMessage<Document> request = new BeanXRoadMessage<Document>(header, query, attachments);
 
     SOAPElement teenusElement = createXteeMessageStructure(requestMessage, responseMessage);
     if (XRoadProtocolVersion.V2_0 == version) {
@@ -116,37 +115,18 @@ public abstract class AbstractXTeeBaseEndpoint implements MessageEndpoint {
     }
 
     // Build response message
-    XTeeMessage<Element> response =
-        new BeanXTeeMessage<Element>(header, teenusElement, new ArrayList<XTeeAttachment>());
+    XRoadMessage<Element> response =
+        new BeanXRoadMessage<Element>(header, teenusElement, new ArrayList<XRoadAttachment>());
 
     // Run logic
     invokeInternalEx(request, response, requestMessage, responseMessage);
 
     // Add any attachments
-    for (XTeeAttachment a : response.getAttachments()) {
+    for (XRoadAttachment a : response.getAttachments()) {
       AttachmentPart attachment = responseMessage.createAttachmentPart(a.getDataHandler());
       attachment.setContentId("<" + a.getCid() + ">");
       responseMessage.addAttachmentPart(attachment);
     }
-  }
-
-  @SuppressWarnings("unchecked")
-  private XTeeHeader parseXteeHeader(SOAPMessage paringMessage) throws SOAPException {
-    XTeeHeader pais = new XTeeHeader();
-    if (paringMessage.getSOAPHeader() == null) {
-      return pais;
-    }
-
-    SOAPHeader header = paringMessage.getSOAPHeader();
-    for (Iterator<Node> headerElemendid = header.getChildElements(); headerElemendid.hasNext();) {
-      Node headerElement = headerElemendid.next();
-      if (!SOAPUtil.isTextNode(headerElement) && headerElement.getFirstChild() != null) {
-        String localName = headerElement.getLocalName();
-        String value = headerElement.getFirstChild().getNodeValue();
-        pais.addElement(new QName(headerElement.getNamespaceURI(), localName), value);
-      }
-    }
-    return pais;
   }
 
   protected Document parseQuery(SOAPMessage queryMsg) throws Exception {
@@ -203,7 +183,7 @@ public abstract class AbstractXTeeBaseEndpoint implements MessageEndpoint {
     if (teenusElement.getNamespaceURI() == null) {
       throw new IllegalStateException("Service request is missing namespace.");
     }
-    String prefix = teenusElement.getPrefix() == null ? "rsp" : teenusElement.getPrefix(); 
+    String prefix = teenusElement.getPrefix() == null ? "rsp" : teenusElement.getPrefix();
     SOAPUtil.addNamespace(responseMessage, prefix, teenusElement.getNamespaceURI());
 
     String teenusElementName = teenusElement.getLocalName();
@@ -246,15 +226,15 @@ public abstract class AbstractXTeeBaseEndpoint implements MessageEndpoint {
 
   /**
    * This method can be overridden if you need direct access to the request and response messages.
-   * 
+   *
    * @param request
    * @param response
    * @param responseMessage
    * @param requestMessage
    * @throws Exception
    */
-  protected void invokeInternalEx(XTeeMessage<Document> request,
-                                  XTeeMessage<Element> response,
+  protected void invokeInternalEx(XRoadMessage<Document> request,
+                                  XRoadMessage<Element> response,
                                   SOAPMessage responseMessage,
                                   SOAPMessage requestMessage) throws Exception {
     invokeInternal(request, response);
@@ -262,11 +242,11 @@ public abstract class AbstractXTeeBaseEndpoint implements MessageEndpoint {
 
   /**
    * Method which must implement the service logic, receives <code>request</code> and <code>response</code>.
-   * 
+   *
    * @param request
    * @param response
    */
-  protected void invokeInternal(XTeeMessage<Document> request, XTeeMessage<Element> response) throws Exception {
+  protected void invokeInternal(XRoadMessage<Document> request, XRoadMessage<Element> response) throws Exception {
     throw new IllegalStateException("You must override either the 'invokeInternal' or the 'invokeInternalEx' method!");
   }
 }

@@ -23,15 +23,15 @@ import org.w3c.dom.NodeList;
 
 import com.nortal.jroad.endpoint.helper.AxisContextHelper;
 import com.nortal.jroad.enums.XRoadProtocolVersion;
-import com.nortal.jroad.model.BeanXTeeMessage;
-import com.nortal.jroad.model.XTeeAttachment;
-import com.nortal.jroad.model.XTeeMessage;
+import com.nortal.jroad.model.BeanXRoadMessage;
+import com.nortal.jroad.model.XRoadAttachment;
+import com.nortal.jroad.model.XRoadMessage;
 import com.nortal.jroad.util.AxisUtil;
 import com.nortal.jroad.util.SOAPUtil;
 
 /**
  * Axis marshalling implementation
- * 
+ *
  * @author Dmitri Danilkin
  * @param
  *          <P>
@@ -48,8 +48,8 @@ public abstract class AbstractXTeeAxisEndpoint<P, V> extends AbstractXTeeBaseEnd
 
   @Override
   @SuppressWarnings("unchecked")
-  protected void invokeInternalEx(XTeeMessage<Document> request,
-                                  XTeeMessage<Element> response,
+  protected void invokeInternalEx(XRoadMessage<Document> request,
+                                  XRoadMessage<Element> response,
                                   SOAPMessage requestMessage,
                                   SOAPMessage responseMessage) throws Exception {
     requestMessage.getSOAPHeader().detachNode();
@@ -83,11 +83,11 @@ public abstract class AbstractXTeeAxisEndpoint<P, V> extends AbstractXTeeBaseEnd
       axisMessage.addAttachmentPart(i.next());
     }
 
-    XTeeMessage<P> axisRequestMessage = new BeanXTeeMessage<P>(request.getHeader(),
+    XRoadMessage<P> axisRequestMessage = new BeanXRoadMessage<P>(request.getHeader(),
                                                                (P) axisMessage.getSOAPEnvelope().getFirstBody().getObjectValue(getParingKehaClass()),
                                                                request.getAttachments());
-    XTeeMessage<V> axisResponseMessage =
-        new BeanXTeeMessage<V>(response.getHeader(), null, new ArrayList<XTeeAttachment>());
+    XRoadMessage<V> axisResponseMessage =
+        new BeanXRoadMessage<V>(response.getHeader(), null, new ArrayList<XRoadAttachment>());
 
     invoke(axisRequestMessage, axisResponseMessage);
 
@@ -113,18 +113,18 @@ public abstract class AbstractXTeeAxisEndpoint<P, V> extends AbstractXTeeBaseEnd
 
   /**
    * Overridde this method if you require access to the header or attachments
-   * 
+   *
    * @param request
    * @param response
    * @throws Exception
    */
-  protected void invoke(XTeeMessage<P> request, XTeeMessage<V> response) throws Exception {
+  protected void invoke(XRoadMessage<P> request, XRoadMessage<V> response) throws Exception {
     response.setContent(invokeBean(request.getContent()));
   }
 
   /**
    * Override this method if you only require access to the message contents
-   * 
+   *
    * @param requestBean
    * @return an object, which can be serialized by Axis
    * @throws IOException

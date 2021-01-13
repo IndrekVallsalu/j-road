@@ -10,9 +10,9 @@
 package com.nortal.jroad.endpoint;
 
 import com.nortal.jroad.enums.XRoadProtocolVersion;
-import com.nortal.jroad.model.BeanXTeeMessage;
-import com.nortal.jroad.model.XTeeAttachment;
-import com.nortal.jroad.model.XTeeMessage;
+import com.nortal.jroad.model.BeanXRoadMessage;
+import com.nortal.jroad.model.XRoadAttachment;
+import com.nortal.jroad.model.XRoadMessage;
 import com.nortal.jroad.util.AttachmentUtil;
 import com.nortal.jroad.util.SOAPUtil;
 import java.io.IOException;
@@ -124,7 +124,7 @@ public abstract class AbstractXTeeJAXBEndpoint<T> extends AbstractXTeeBaseEndpoi
 
   @Override
   @SuppressWarnings({ "unchecked", "rawtypes" })
-  protected void invokeInternal(final XTeeMessage<Document> request, final XTeeMessage<Element> response)
+  protected void invokeInternal(final XRoadMessage<Document> request, final XRoadMessage<Element> response)
       throws Exception {
     if (getParingKehaClass() == null) {
       throw new IllegalStateException("Query body class ('requestClass') is unset/unspecified!");
@@ -146,12 +146,12 @@ public abstract class AbstractXTeeJAXBEndpoint<T> extends AbstractXTeeBaseEndpoi
       requestOnly.appendChild(requestOnly.importNode(SOAPUtil.getFirstNonTextChild(request.getContent()), true));
     }
 
-    XTeeMessage<T> jaxbRequestMessage = new BeanXTeeMessage<T>(request.getHeader(),
+    XRoadMessage<T> jaxbRequestMessage = new BeanXRoadMessage<T>(request.getHeader(),
                                                                requestUnmarshaller.unmarshal(requestOnly.getDocumentElement(),
                                                                                              getParingKehaClass()).getValue(),
                                                                request.getAttachments());
-    XTeeMessage<Object> jaxbResponseMessage =
-        new BeanXTeeMessage<Object>(response.getHeader(), null, new ArrayList<XTeeAttachment>());
+    XRoadMessage<Object> jaxbResponseMessage =
+        new BeanXRoadMessage<Object>(response.getHeader(), null, new ArrayList<XRoadAttachment>());
 
     invoke(jaxbRequestMessage, jaxbResponseMessage);
     Object bean = jaxbResponseMessage.getContent();
@@ -192,15 +192,15 @@ public abstract class AbstractXTeeJAXBEndpoint<T> extends AbstractXTeeBaseEndpoi
   }
 
   private static class XTeeAttachmentUnmarshaller extends AttachmentUnmarshaller {
-    private final Map<String, XTeeAttachment> cidMap = new HashMap<String, XTeeAttachment>();
+    private final Map<String, XRoadAttachment> cidMap = new HashMap<String, XRoadAttachment>();
 
-    XTeeAttachmentUnmarshaller(final XTeeMessage<?> message) {
-      for (XTeeAttachment attachment : message.getAttachments()) {
+    XTeeAttachmentUnmarshaller(final XRoadMessage<?> message) {
+      for (XRoadAttachment attachment : message.getAttachments()) {
         cidMap.put(attachment.getCid(), attachment);
       }
     }
 
-    private XTeeAttachment getAttachment(String contentId) {
+    private XRoadAttachment getAttachment(String contentId) {
       if (contentId.startsWith("cid:")) {
         contentId = contentId.substring("cid:".length());
         try {
@@ -224,7 +224,7 @@ public abstract class AbstractXTeeJAXBEndpoint<T> extends AbstractXTeeBaseEndpoi
 
     @Override
     public DataHandler getAttachmentAsDataHandler(final String cid) {
-      XTeeAttachment attachment = getAttachment(cid);
+      XRoadAttachment attachment = getAttachment(cid);
       return attachment.getDataHandler();
     }
 
@@ -237,10 +237,10 @@ public abstract class AbstractXTeeJAXBEndpoint<T> extends AbstractXTeeBaseEndpoi
   }
 
   private static class XTeeAttachmentMarshaller extends AttachmentMarshaller {
-    private final List<XTeeAttachment> attachments;
+    private final List<XRoadAttachment> attachments;
     private long salt = 0;
 
-    public XTeeAttachmentMarshaller(final XTeeMessage<?> message) {
+    public XTeeAttachmentMarshaller(final XRoadMessage<?> message) {
       this.attachments = message.getAttachments();
     }
 
@@ -263,7 +263,7 @@ public abstract class AbstractXTeeJAXBEndpoint<T> extends AbstractXTeeBaseEndpoi
     public String addSwaRefAttachment(final DataHandler handler) {
       salt++;
       String contentId = AttachmentUtil.getUniqueCid();
-      attachments.add(new XTeeAttachment(contentId, handler));
+      attachments.add(new XRoadAttachment(contentId, handler));
       return "cid:" + contentId;
     }
 
@@ -275,7 +275,7 @@ public abstract class AbstractXTeeJAXBEndpoint<T> extends AbstractXTeeBaseEndpoi
 
   }
 
-  protected void invoke(final XTeeMessage<T> request, final XTeeMessage<Object> response) throws Exception {
+  protected void invoke(final XRoadMessage<T> request, final XRoadMessage<Object> response) throws Exception {
     response.setContent(invokeBean(request.getContent()));
   }
 

@@ -1,4 +1,4 @@
-package com.nortal.jroad.util.header;
+package com.nortal.jroad.model;
 
 import org.springframework.util.CollectionUtils;
 
